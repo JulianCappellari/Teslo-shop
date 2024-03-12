@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  postgres-db:
+    image: postgres:15.3
+    restart: always #Para que siempre quede levantada
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=teslo-shop
+      - POSTGRES_PASSWORD=123456
+    volumes:
+      - ./postgres:/var/lib/postgresql/data
+    ports:
+      - 5432:5432

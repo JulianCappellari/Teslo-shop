@@ -1,0 +1,180 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Talle {
+  XS
+  S
+  M
+  L
+  XL
+  XXL
+  XXXL
+}
+
+enum Genero {
+  hombre
+  mujeres
+  kid
+  unisex
+}
+
+enum Rol {
+  admin
+  usuario
+}
+
+model Categoria {
+  id     String @id @default(uuid())
+  nombre String @unique
+
+  //Relacion con un producto
+  Producto Producto[]
+}
+
+model Producto {
+  id          String   @id @default(uuid())
+  descripcion String
+  enStock     Int
+  precio      Float    @default(0)
+  talles      Talle[]  @default([])
+  slug        String   @unique
+  etiquetas   String[] @default([])
+  titulo      String
+  genero      Genero
+
+  // Cada producto (o muchos productos) debe tener una categoria 
+  categoria   Categoria @relation(fields: [categoriaId], references: [id]) // Va a haber una relacion de categoria que va a enlazar categoriaId de esta tabla con el id de la tabla categoria
+  categoriaId String
+
+  // Relacion con ImagenProducto
+  ImagenProducto ImagenProducto[]
+  ItemsDeLaOrden ItemsDeLaOrden[]
+
+  // Para buscar un producto a traves de un genero
+  @@index([genero])
+}
+
+model ImagenProducto {
+  id  Int    @id @default(autoincrement())
+  url String
+
+  // Relacion 
+  producto   Producto @relation(fields: [productoId], references: [id])
+  productoId String
+}
+
+model Usuario {
+  id              String    @id @default(uuid())
+  nombre          String
+  email           String    @unique
+  emailVerificado DateTime?
+  password        String
+  rol             Rol       @default(usuario)
+  imagen          String?
+
+  // Referencia a la tabla de direccion de usuario
+  direccion DireccionUsuario?
+
+  // Relaciones
+  Orden Orden[] // Relacion de 1 a nuchos
+}
+
+model Pais {
+  id     String @id
+  nombre String
+
+  // RElaciones
+  DireccionUsuario   DireccionUsuario[]
+  DireccionDeLaOrden DireccionDeLaOrden[]
+}
+
+model DireccionUsuario {
+  id           String  @id @default(uuid())
+  nombre       String
+  apellido     String
+  direccion    String
+  direccion2   String?
+  ciudad       String
+  codigoPostal String
+  telefono     String
+
+  // Relaciones
+  pais   Pais   @relation(fields: [paisId], references: [id])
+  paisId String
+
+  // Relacion 1 a 1 
+  usuario   Usuario @relation(fields: [usuarioId], references: [id])
+  usuarioId String  @unique
+}
+
+// Orden de compras 
+model Orden {
+  id             String    @id @default(uuid())
+  subTotal       Float
+  impuesto       Float
+  total          Float
+  itemsEnLaOrden Int
+  estaPagada     Boolean   @default(false)
+  pagadoEl       DateTime?
+
+  creadoEl      DateTime @default(now())
+  actualizadoEl DateTime @updatedAt
+
+  // RElaciones
+
+  //Relacion con el usuario
+  usuario   Usuario @relation(fields: [usuarioId], references: [id])
+  usuarioId String
+
+  ItemsDeLaOrden ItemsDeLaOrden[]
+
+  // Relacion unica
+  DireccionDeLaOrden DireccionDeLaOrden?
+
+  transaccionId String? //id del proovedor de pago 
+}
+
+model ItemsDeLaOrden {
+  id       String @id @default(uuid())
+  cantidad Int
+  precio   Float
+  talle    Talle
+
+  // Relaciones
+  orden   Orden  @relation(fields: [ordenId], references: [id])
+  ordenId String
+
+  // RElacion con el producto 
+  producto   Producto @relation(fields: [productoId], references: [id])
+  productoId String
+}
+
+model DireccionDeLaOrden {
+  id           String  @id @default(uuid())
+  nombre       String
+  apellido     String
+  direccion    String
+  direccion2   String?
+  codigoPostal String
+  ciudad       String
+  telefono     String
+
+  // Relaciones
+  pais   Pais   @relation(fields: [paisId], references: [id])
+  paisId String
+
+  Orden   Orden  @relation(fields: [ordenId], references: [id])
+  ordenId String @unique
+}
